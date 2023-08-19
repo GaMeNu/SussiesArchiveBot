@@ -24,6 +24,11 @@ async def on_message(msg: discord.Message):
         await msg.reply('Synced!', delete_after=3)
 
 
+class UserData:
+    def __init__(self, name, num):
+        self.name = name
+        self.entryNum = num
+
 @tree.command(name='archive', description='TBA')
 async def archive(intr: discord.Interaction, user: str | None, mention: discord.User | None):
     await intr.response.defer()
@@ -41,14 +46,18 @@ async def archive(intr: discord.Interaction, user: str | None, mention: discord.
         e = discord.Embed(colour=discord.Colour.from_rgb(114, 40, 204),
                           title='The Sussies Archive',
                           description='List of all available people:')
-
+        entries: list[UserData] = []
         for name in os.listdir(f"./{FOLDER_NAME}"):
             path = f"./{FOLDER_NAME}/{name}"
-            num_files = len([f for f in os.listdir(path)
-                             if os.path.isfile(os.path.join(path, f))])
+            num_files = len(os.listdir(path))
+            newData = UserData(name, num_files)
+            i = 0
+            while (i<len(entries) and newData.entryNum < entries[i].entryNum):
+                i += 1
+            entries.insert(i, newData)
 
-
-            e.add_field(name=name, value=f'{num_files} entries', inline=False)
+        for data in entries:
+            e.add_field(name=data.name, value=f'{data.entryNum} entries', inline=False)
         await intr.followup.send(content='Here you go! Run the command with a name to get one of their entries at random!', embed=e)
         return
 
