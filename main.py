@@ -6,6 +6,8 @@ import json
 import os
 import random
 
+import ext_Archive
+
 AUTHOR_ID = 474901193563570186
 FOLDER_NAME = 'BWU_sussies'
 TOKEN: str
@@ -24,71 +26,14 @@ async def on_message(msg: discord.Message):
         await msg.reply('Synced!', delete_after=3)
 
 
-class UserData:
-    def __init__(self, name, num):
-        self.name = name
-        self.entryNum = num
-
-@tree.command(name='archive', description='TBA')
-async def archive(intr: discord.Interaction, user: str | None, mention: discord.User | None):
-    await intr.response.defer()
-
-    if (mention is not None) and (user is not None):
-        await intr.followup.send(
-            embed=discord.Embed(colour=discord.Colour.red(),
-                                title="Error:",
-                                description="Both a username and a mention were given, please choose one!"
-                                )
-        )
-        return
-
-    if user is None and mention is None:
-        e = discord.Embed(colour=discord.Colour.from_rgb(114, 40, 204),
-                          title='The Sussies Archive',
-                          description='List of all available people:')
-        entries: list[UserData] = []
-        for name in os.listdir(f"./{FOLDER_NAME}"):
-            path = f"./{FOLDER_NAME}/{name}"
-            num_files = len(os.listdir(path))
-            newData = UserData(name, num_files)
-            i = 0
-            while (i<len(entries) and newData.entryNum < entries[i].entryNum):
-                i += 1
-            entries.insert(i, newData)
-
-        for data in entries:
-            e.add_field(name=data.name, value=f'{data.entryNum} entries', inline=False)
-        await intr.followup.send(content='Here you go! Run the command with a name to get one of their entries at random!', embed=e)
-        return
-
-    if mention is not None:
-        with open("idUsernameTable.json", "r") as idTable:
-            ids: dict = json.loads(idTable.read())
-        user = ids.get(str(mention.id))
-        if user is None:
-            await intr.followup.send(
-                embed=discord.Embed(colour=discord.Colour.red(),
-                                    title="Error:",
-                                    description="Username isn't registered in ID table!"
-                                    )
-            )
-            return
 
 
-    path = f"./{FOLDER_NAME}/{user}"
-    if not os.path.exists(path):
-        await intr.followup.send(
-            embed=discord.Embed(colour=discord.Colour.red(),
-                                title="Error:",
-                                description="Could not find username!\nPlease run \"/archive\" to get a list of all available users"
-                                )
-        )
-        return
 
-    files = [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-    f = random.choice(files)
 
-    await intr.followup.send(files=[discord.File(f)])
+@bot.event
+async def on_ready():
+    if bot.get_cog("Archive") is None:
+        cog_gd = await ext_Archive.setup(bot)
 
 
 
